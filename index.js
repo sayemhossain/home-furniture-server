@@ -44,6 +44,38 @@ async function run() {
       const furniture = await furniturecollection.findOne(query);
       res.send(furniture);
     });
+
+    //post data for update quantity
+    app.post("/furnitures", async (req, res) => {
+      const newFurniture = req.body;
+      const result = await furniturecollection.insertOne(newFurniture);
+      res.send(result);
+    });
+
+    // add new furniture
+    app.post("/furnitures", async (req, res) => {
+      const newService = req.body;
+      const result = await serviceCollection.insertOne(newService);
+      res.send(result);
+    });
+    //update quantity
+    app.put("/furnitures/:id", async (req, res) => {
+      const id = req.params.id;
+      const newQuantity = req.body;
+      const query = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          quantity: newQuantity.restock,
+        },
+      };
+      const result = await furniturecollection.updateOne(
+        query,
+        updatedDoc,
+        options
+      );
+      res.send(result);
+    });
   } finally {
   }
 }
