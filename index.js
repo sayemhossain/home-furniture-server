@@ -2,8 +2,9 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const port = process.env.PORT || 5000;
+require("dotenv").config();
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 //username: dbuser
 //pass: TDMuDLwEUALynvoG
@@ -13,8 +14,7 @@ app.use(express.json());
 
 // from mongodb
 
-const uri =
-  "mongodb+srv://dbuser:TDMuDLwEUALynvoG@cluster0.ihsnm.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ihsnm.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -36,17 +36,18 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     });
+
+    //find one using id from database
+    app.get("/furnitures/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const furniture = await furniturecollection.findOne(query);
+      res.send(furniture);
+    });
   } finally {
   }
 }
 run().catch(console.dir);
-// client.connect((err) => {
-//   const collection = client.db("test").collection("devices");
-//   console.log("conndeddafdsfasdf");
-//   // perform actions on the collection object
-//   client.close();
-// });
-
 // from mongodb end
 
 // this is basic setup
