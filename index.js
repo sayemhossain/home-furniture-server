@@ -58,15 +58,23 @@ async function run() {
       const result = await serviceCollection.insertOne(newService);
       res.send(result);
     });
+    //Delete
+    app.delete("/furnitures/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await furniturecollection.deleteOne(query);
+      res.send(result);
+    });
     //update quantity
     app.put("/furnitures/:id", async (req, res) => {
       const id = req.params.id;
-      const newQuantity = req.body;
+      const updatedQuantity = req.body;
+      console.log("form backend", updatedQuantity);
       const query = { _id: ObjectId(id) };
       const options = { upsert: true };
       const updatedDoc = {
         $set: {
-          quantity: newQuantity.restock,
+          quantity: updatedQuantity.newQuantity,
         },
       };
       const result = await furniturecollection.updateOne(
