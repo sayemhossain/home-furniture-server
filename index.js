@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 5000;
 require("dotenv").config();
 
@@ -11,6 +12,22 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 // middleware
 app.use(cors());
 app.use(express.json());
+
+function verifyJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send({ message: "unthorized access" });
+  }
+  const token = authHeader.split(" ")[1];
+  jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+    if (err) {
+      return res.status(403).send({ message: "Forbidded access" });
+    } else {
+      req.decoded = decoded;
+      next();
+    }
+  });
+}
 
 // from mongodb
 
@@ -37,6 +54,15 @@ async function run() {
       res.send(result);
     });
 
+    // AUTH
+    app.post("/login", async (req, res) => {
+      const user = req.body;
+      const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN, {
+        expiresIn: "1d",
+      });
+      res.send(accessToken);
+    });
+
     //find one using id from database
     app.get("/furnitures/:id", async (req, res) => {
       const id = req.params.id;
@@ -58,6 +84,7 @@ async function run() {
       const result = await serviceCollection.insertOne(newService);
       res.send(result);
     });
+
     //Delete
     app.delete("/furnitures/:id", async (req, res) => {
       const id = req.params.id;
@@ -69,18 +96,54 @@ async function run() {
     app.put("/furnitures/:id", async (req, res) => {
       const id = req.params.id;
       const updatedQuantity = req.body;
+      const a = updatedQuantity.x;
       const query = { _id: ObjectId(id) };
       const options = { upsert: true };
-      const updatedDoc = {
-        $set: {
-          quantity: updatedQuantity.newQuantity,
-        },
-      };
-      const result = await furniturecollection.updateOne(
-        query,
-        updatedDoc,
-        options
-      );
+      if (a == 1) {
+        const updatedDoc = {
+          $set: {
+            quantity: updatedQuantity.newQuantity,
+          },
+        };
+        const result = await furniturecollection.updateOne(
+          query,
+          updatedDoc,
+          options
+        );
+        res.send(result);
+      } else {
+        const updatedDoc = {
+          $set: {
+            quantity: updatedQuantity.deliverQuantity,
+          },
+        };
+        const result = await furniturecollection.updateOne(
+          query,
+          updatedDoc,
+          options
+        );
+        res.send(result);
+      }
+    });
+
+    //order collection api
+    app.get("/items", verifyJWT, async (req, res) => {
+      const decodedEmail = req.decoded.email;
+      const email = req.query.email;
+
+      if (email === decodedEmail) {
+        const query = { email: email };
+        const cursor = furniturecollection.find(query);
+        const result = await cursor.toArray();
+        res.send(result);
+      } else {
+        res.status(403).send({ message: "Forbeden access" });
+      }
+    });
+
+    app.post("/items", async (req, res) => {
+      const items = req.body;
+      const result = await furniturecollection.insertOne(items);
       res.send(result);
     });
   } finally {
